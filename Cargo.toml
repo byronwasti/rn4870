@@ -1,13 +1,22 @@
 [package]
-name = "rn4870"
 authors = ["Byron Wasti <byron.wasti@gmail.com>"]
-categories = ["embedded", "hardware-support", "no-std"]
+categories = [
+    "embedded",
+    "hardware-support",
+    "no-std",
+]
 description = "A platform agnostic driver for the RN4870 BLE module"
 documentation = ""
-keywords = ["embedded-hal-driver", "ble", "bluetooth"]
+keywords = [
+    "embedded-hal-driver",
+    "ble",
+    "bluetooth",
+]
 license = "MIT or Apache-2.0"
+name = "rn4870"
 repository = ""
 version = "0.1.0"
 
 [dependencies]
 embedded-hal = "0.1.0"
+nb = "0.1.1"
