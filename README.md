@@ -1,10 +1,17 @@
 # rn4870
 
 ## Functionality
+- Switch to Command Mode
+- Switch to Data Mode
+- Reset module
 
 ## TODO
+- Rework the state machine system to be more error friendly 
+- Implement all the various Command Mode functionality
 
 ## Examples
+
+Examples will be available soon enough!
 
 ## License
 
