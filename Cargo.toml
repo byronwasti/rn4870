@@ -6,7 +6,6 @@ categories = [
     "no-std",
 ]
 description = "A platform agnostic driver for the RN4870 BLE module"
-documentation = ""
 keywords = [
     "embedded-hal-driver",
     "ble",
@@ -14,7 +13,7 @@ keywords = [
 ]
 license = "MIT or Apache-2.0"
 name = "rn4870"
-repository = ""
+repository = "https://github.com/byronwasti/rn4870"
 version = "0.1.0"
 
 [dependencies]
