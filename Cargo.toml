@@ -11,7 +11,7 @@ keywords = [
     "ble",
     "bluetooth",
 ]
-license = "MIT or Apache-2.0"
+license = "MIT OR Apache-2.0"
 name = "rn4870"
 repository = "https://github.com/byronwasti/rn4870"
 version = "0.1.0"
