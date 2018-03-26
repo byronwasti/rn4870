@@ -46,7 +46,7 @@ where
     /// Note that this must be done before
     /// the RN4870 will start responding to
     /// serial commands.
-    pub fn reset<DELAY: DelayMs<u16>>(&mut self, delay: &mut DELAY) 
+    pub fn hard_reset<DELAY: DelayMs<u16>>(&mut self, delay: &mut DELAY)
         -> Result<(), Error<ER, EW>> {
 
         self.nrst.set_low();
@@ -95,7 +95,7 @@ where
     }
 
     /// Enter Command Mode
-    pub fn enter_cmd_mode(mut self) -> Result<(), Error<ER, EW>>{
+    pub fn enter_cmd_mode(&mut self) -> Result<(), Error<ER, EW>>{
         self.blocking_write(&[b'$', b'$', b'$'])
             .map_err(|e| Error::Write(e))?;
 
@@ -112,11 +112,68 @@ where
     }
 
     /// Enter Data Mode
-    pub fn enter_data_mode(mut self) -> Result<(), Error<ER, EW>> {
+    pub fn enter_data_mode(&mut self) -> Result<(), Error<ER, EW>> {
         self.blocking_write(&[b'-', b'-', b'-', b'\r'])
             .map_err(|e| Error::Write(e))?;
 
         Ok(())
+    }
+
+    fn send_command(&mut self, command: &str, argument: &str) -> Result<(), Error<ER, EW>> {
+        // Send command
+        self.blocking_write(&command.as_bytes())
+            .map_err(|e| Error::Write(e))?;
+
+        self.blocking_write(&[b','])
+            .map_err(|e| Error::Write(e))?;
+
+        // Send argument
+        self.blocking_write(&argument.as_bytes())
+            .map_err(|e| Error::Write(e))?;
+
+        // Send return carriage to end command
+        self.blocking_write(&[b'\r'])
+            .map_err(|e| Error::Write(e))?;
+
+        // Check for response
+        let mut buffer = [0; 3];
+        self.blocking_read(&mut buffer[..])
+            .map_err(|e| Error::Read(e))?;
+
+        if buffer == "AOK".as_bytes() {
+            Ok(())
+        } else {
+            Err(Error::InvalidResponse)
+        }
+    }
+
+    /// Set the BLE name
+    ///
+    /// This function only works when in Command Mode.
+    pub fn set_name(&mut self, name: &str) -> Result<(), Error<ER, EW>> {
+        // Name must be less than 15 characters
+        if name.as_bytes().len() > 15 {
+            panic!("Invalid name length");
+        }
+
+        self.send_command("S-", name)
+    }
+
+    /// Set default services
+    pub fn set_default_services(&mut self, value: u8) -> Result<(), Error<ER, EW>> {
+        self.send_command("SS", "C0")
+    }
+
+    pub fn send_raw(&mut self, values: &[u8]) -> Result<(), EW> {
+        for value in values {
+            block!(self.uart.write(*value))?;
+        }
+
+        Ok(())
+    }
+
+    pub fn read_raw(&mut self) -> Result<u8, ER> {
+        block!(self.uart.read())
     }
 }
 

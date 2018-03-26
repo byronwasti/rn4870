@@ -3,11 +3,15 @@
 ## Functionality
 - Switch to Command Mode
 - Switch to Data Mode
-- Reset module
+- Set BLE name
+- Turn on default services
+- Basic transparent UART service transmit and receive
+- Hardware Reset module
 
 ## TODO
 - Rework the state machine system to be more error friendly 
 - Implement all the various Command Mode functionality
+- Serial read is extremely finicky and prone to overrun
 
 ## Examples
 
