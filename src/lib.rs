@@ -6,9 +6,9 @@ extern crate embedded_hal as hal;
 #[macro_use(block)]
 extern crate nb;
 
-use hal::serial::{Read, Write};
+use hal::blocking::delay::DelayMs;
 use hal::digital::v2::OutputPin;
-use hal::blocking::delay::{DelayMs};
+use hal::serial::{Read, Write};
 
 /// Error type
 pub enum Error<ER, EW, GpioError> {
@@ -38,10 +38,7 @@ where
 {
     /// Construct a new Rn4870 Object
     pub fn new(uart: UART, nrst: NRST) -> Self {
-        Self {
-            uart,
-            nrst,
-        }
+        Self { uart, nrst }
     }
 
     /// Reset the RN4870 module
@@ -49,17 +46,19 @@ where
     /// Note that this must be done before
     /// the RN4870 will start responding to
     /// serial commands.
-    pub fn hard_reset<DELAY: DelayMs<u16>>(&mut self, delay: &mut DELAY)
-        -> Result<(), Error<ER, EW, GpioError>> {
-
+    pub fn hard_reset<DELAY: DelayMs<u16>>(
+        &mut self,
+        delay: &mut DELAY,
+    ) -> Result<(), Error<ER, EW, GpioError>> {
         self.nrst.set_low().map_err(Error::Gpio)?;
         delay.delay_ms(200u16);
         self.nrst.set_high().map_err(Error::Gpio)?;
 
         let mut buffer = [0; 8];
-        let expected = [b'%',b'R',b'E',b'B',b'O',b'O',b'T',b'%'];
+        let expected = [b'%', b'R', b'E', b'B', b'O', b'O', b'T', b'%'];
 
-        self.blocking_read(&mut buffer[..]).map_err(|e| Error::Read(e))?;
+        self.blocking_read(&mut buffer[..])
+            .map_err(|e| Error::Read(e))?;
 
         if buffer != expected {
             Err(Error::InvalidResponse)
@@ -103,9 +102,10 @@ where
             .map_err(|e| Error::Write(e))?;
 
         let mut buffer = [0; 5];
-        let expected = [b'C',b'M',b'D',b'>',b' '];
+        let expected = [b'C', b'M', b'D', b'>', b' '];
 
-        self.blocking_read(&mut buffer[..]).map_err(|e| Error::Read(e))?;
+        self.blocking_read(&mut buffer[..])
+            .map_err(|e| Error::Read(e))?;
 
         if buffer != expected {
             Err(Error::InvalidResponse)
@@ -122,21 +122,23 @@ where
         Ok(())
     }
 
-    fn send_command(&mut self, command: &str, argument: &str) -> Result<(), Error<ER, EW, GpioError>> {
+    fn send_command(
+        &mut self,
+        command: &str,
+        argument: &str,
+    ) -> Result<(), Error<ER, EW, GpioError>> {
         // Send command
         self.blocking_write(&command.as_bytes())
             .map_err(|e| Error::Write(e))?;
 
-        self.blocking_write(&[b','])
-            .map_err(|e| Error::Write(e))?;
+        self.blocking_write(&[b',']).map_err(|e| Error::Write(e))?;
 
         // Send argument
         self.blocking_write(&argument.as_bytes())
             .map_err(|e| Error::Write(e))?;
 
         // Send return carriage to end command
-        self.blocking_write(&[b'\r'])
-            .map_err(|e| Error::Write(e))?;
+        self.blocking_write(&[b'\r']).map_err(|e| Error::Write(e))?;
 
         // Check for response
         let mut buffer = [0; 3];
@@ -179,4 +181,3 @@ where
         block!(self.uart.read())
     }
 }
-
