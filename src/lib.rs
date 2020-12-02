@@ -7,16 +7,19 @@ extern crate embedded_hal as hal;
 extern crate nb;
 
 use hal::serial::{Read, Write};
-use hal::digital::OutputPin;
+use hal::digital::v2::OutputPin;
 use hal::blocking::delay::{DelayMs};
 
 /// Error type
-pub enum Error<ER, EW> {
+pub enum Error<ER, EW, GpioError> {
     /// Serial read error
     Read(ER),
 
     /// Serial write error
     Write(EW),
+
+    /// Gpio Error,
+    Gpio(GpioError),
 
     /// Invalid response from BLE module
     InvalidResponse,
@@ -28,10 +31,10 @@ pub struct Rn4870<UART, NRST> {
     nrst: NRST,
 }
 
-impl<UART, NRST, EW, ER> Rn4870<UART, NRST>
+impl<UART, NRST, EW, ER, GpioError> Rn4870<UART, NRST>
 where
     UART: Write<u8, Error = EW> + Read<u8, Error = ER>,
-    NRST: OutputPin,
+    NRST: OutputPin<Error = GpioError>,
 {
     /// Construct a new Rn4870 Object
     pub fn new(uart: UART, nrst: NRST) -> Self {
@@ -47,11 +50,11 @@ where
     /// the RN4870 will start responding to
     /// serial commands.
     pub fn hard_reset<DELAY: DelayMs<u16>>(&mut self, delay: &mut DELAY)
-        -> Result<(), Error<ER, EW>> {
+        -> Result<(), Error<ER, EW, GpioError>> {
 
-        self.nrst.set_low();
+        self.nrst.set_low().map_err(Error::Gpio)?;
         delay.delay_ms(200u16);
-        self.nrst.set_high();
+        self.nrst.set_high().map_err(Error::Gpio)?;
 
         let mut buffer = [0; 8];
         let expected = [b'%',b'R',b'E',b'B',b'O',b'O',b'T',b'%'];
@@ -84,7 +87,7 @@ where
         }
         Ok(())
     }
-    
+
     /// Escape hatch for handling hardware errors
     ///
     /// Until the `embedded_hal` traits include error handling there
@@ -95,7 +98,7 @@ where
     }
 
     /// Enter Command Mode
-    pub fn enter_cmd_mode(&mut self) -> Result<(), Error<ER, EW>>{
+    pub fn enter_cmd_mode(&mut self) -> Result<(), Error<ER, EW, GpioError>> {
         self.blocking_write(&[b'$', b'$', b'$'])
             .map_err(|e| Error::Write(e))?;
 
@@ -112,14 +115,14 @@ where
     }
 
     /// Enter Data Mode
-    pub fn enter_data_mode(&mut self) -> Result<(), Error<ER, EW>> {
+    pub fn enter_data_mode(&mut self) -> Result<(), Error<ER, EW, GpioError>> {
         self.blocking_write(&[b'-', b'-', b'-', b'\r'])
             .map_err(|e| Error::Write(e))?;
 
         Ok(())
     }
 
-    fn send_command(&mut self, command: &str, argument: &str) -> Result<(), Error<ER, EW>> {
+    fn send_command(&mut self, command: &str, argument: &str) -> Result<(), Error<ER, EW, GpioError>> {
         // Send command
         self.blocking_write(&command.as_bytes())
             .map_err(|e| Error::Write(e))?;
@@ -150,7 +153,7 @@ where
     /// Set the BLE name
     ///
     /// This function only works when in Command Mode.
-    pub fn set_name(&mut self, name: &str) -> Result<(), Error<ER, EW>> {
+    pub fn set_name(&mut self, name: &str) -> Result<(), Error<ER, EW, GpioError>> {
         // Name must be less than 15 characters
         if name.as_bytes().len() > 15 {
             panic!("Invalid name length");
@@ -160,7 +163,7 @@ where
     }
 
     /// Set default services
-    pub fn set_default_services(&mut self, value: u8) -> Result<(), Error<ER, EW>> {
+    pub fn set_default_services(&mut self, value: u8) -> Result<(), Error<ER, EW, GpioError>> {
         self.send_command("SS", "C0")
     }
 
