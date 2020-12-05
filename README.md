@@ -1,5 +1,9 @@
 # rn4870
 
+## Note: Maintenance Mode
+
+Unfortunately I no longer have the time to actively develop this crate. However, I am happy to review and accept PRs. Happy to pass on ownership on crates.io -- please contact me!
+
 ## Functionality
 - Switch to Command Mode
 - Switch to Data Mode

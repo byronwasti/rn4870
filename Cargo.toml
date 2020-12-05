@@ -14,7 +14,7 @@ keywords = [
 license = "MIT OR Apache-2.0"
 name = "rn4870"
 repository = "https://github.com/byronwasti/rn4870"
-version = "0.1.0"
+version = "0.2.0"
 
 [dependencies]
 embedded-hal = "0.2.4"
