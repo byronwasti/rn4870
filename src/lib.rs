@@ -141,7 +141,7 @@ where
         self.blocking_write(&[b'\r']).map_err(|e| Error::Write(e))?;
 
         // Check for response
-        let mut buffer = [0; 3];
+        let mut buffer = [0; 4];
         self.blocking_read(&mut buffer[..])
             .map_err(|e| Error::Read(e))?;
 
@@ -152,16 +152,28 @@ where
         }
     }
 
-    /// Set the BLE name
+    /// Sets a serialized Bluetooth name for the device
     ///
     /// This function only works when in Command Mode.
-    pub fn set_name(&mut self, name: &str) -> Result<(), Error<ER, EW, GpioError>> {
+    pub fn set_serialized_name(&mut self, name: &str) -> Result<(), Error<ER, EW, GpioError>> {
         // Name must be less than 15 characters
         if name.as_bytes().len() > 15 {
             panic!("Invalid name length");
         }
 
         self.send_command("S-", name)
+    }
+    ///
+    /// Sets the device name
+    ///
+    /// This function only works when in Command Mode.
+    pub fn set_name(&mut self, name: &str) -> Result<(), Error<ER, EW, GpioError>> {
+        // Name must be less than 20 characters
+        if name.as_bytes().len() > 20 {
+            panic!("Invalid name length");
+        }
+
+        self.send_command("SN", name)
     }
 
     /// Set default services
