@@ -122,6 +122,23 @@ where
         Ok(())
     }
 
+    /// Software reset, see section 2.6.28 of the User Guide (DS50002466C)
+    pub fn soft_reset(&mut self) -> Result<(), Error<ER, EW, GpioError>> {
+        self.blocking_write(&[b'R', b',', b'1', b'\r'])
+            .map_err(|e| Error::Write(e))?;
+
+        let mut buffer = [0; 19];
+
+        self.blocking_read(&mut buffer[..])
+            .map_err(|e| Error::Read(e))?;
+
+        if buffer != "Rebooting\r\n%REBOOT%".as_bytes() {
+            Err(Error::InvalidResponse)
+        } else {
+            Ok(())
+        }
+    }
+
     fn send_command(
         &mut self,
         command: &str,
