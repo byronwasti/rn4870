@@ -141,11 +141,12 @@ where
         self.blocking_write(&[b'\r']).map_err(|e| Error::Write(e))?;
 
         // Check for response
-        let mut buffer = [0; 4];
+        let mut buffer = [0; 10];
         self.blocking_read(&mut buffer[..])
             .map_err(|e| Error::Read(e))?;
 
-        if buffer == "AOK".as_bytes() {
+        // only if SR,<hex16> is set with 0x4000 (No prompt) then the prompt is not send
+        if buffer == "AOK\r\nCMD> ".as_bytes() {
             Ok(())
         } else {
             Err(Error::InvalidResponse)
