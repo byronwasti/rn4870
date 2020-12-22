@@ -1,10 +1,12 @@
 //! Driver for the RN4870 BLE module
 
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 
 extern crate embedded_hal as hal;
 #[macro_use(block)]
 extern crate nb;
+#[macro_use(bitflags)]
+extern crate bitflags;
 
 use hal::blocking::delay::DelayMs;
 use hal::digital::v2::OutputPin;
@@ -23,6 +25,48 @@ pub enum Error<ER, EW, GpioError> {
 
     /// Invalid response from BLE module
     InvalidResponse,
+}
+
+bitflags! {
+    /// Services bit flags, see section 2.4.22
+    #[derive(Default)]
+    pub struct Services: u8 {
+        /// Device information
+        const DEVICE_INFORMATION    = 0b1000_0000;
+        /// UART Transparent
+        const UART_TRANSPARENT      = 0b0100_0000;
+        /// Beacon
+        const BEACON                = 0b0010_0000;
+        /// Reserved
+        const RESERVED              = 0b0001_0000;
+    }
+}
+
+impl<'a> Services {
+    /// biflags struct implements UpperHex trair however, not to include other dependencies to
+    /// do something like `uwrite!(s, "{:02X}", self.bits)` I decided to list all the possibilities
+    /// manually
+    pub fn as_str(self) -> &'a str {
+        match self.bits {
+            0b0000_0000 => "00",
+            0b0001_0000 => "10",
+            0b0010_0000 => "20",
+            0b0011_0000 => "30",
+            0b0100_0000 => "40",
+            0b0101_0000 => "50",
+            0b0110_0000 => "60",
+            0b0111_0000 => "70",
+            0b1000_0000 => "80",
+            0b1001_0000 => "90",
+            0b1010_0000 => "A0",
+            0b1011_0000 => "B0",
+            0b1100_0000 => "C0",
+            0b1101_0000 => "D0",
+            0b1110_0000 => "E0",
+            0b1111_0000 => "F0",
+            _ => unreachable!(),
+        }
+    }
 }
 
 /// Rn4870 Object
@@ -195,8 +239,8 @@ where
     }
 
     /// Set default services
-    pub fn set_default_services(&mut self, value: u8) -> Result<(), Error<ER, EW, GpioError>> {
-        self.send_command("SS", "C0")
+    pub fn set_services(&mut self, value: Services) -> Result<(), Error<ER, EW, GpioError>> {
+        self.send_command("SS", value.as_str())
     }
 
     pub fn send_raw(&mut self, values: &[u8]) -> Result<(), EW> {
@@ -209,5 +253,18 @@ where
 
     pub fn read_raw(&mut self) -> Result<u8, ER> {
         block!(self.uart.read())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_services_as_str() {
+        assert_eq!(&Services::empty().as_str(), &"00");
+        assert_eq!(
+            &(Services::UART_TRANSPARENT | Services::DEVICE_INFORMATION).as_str(),
+            &"C0"
+        );
     }
 }
