@@ -168,7 +168,7 @@ where
 
     /// Software reset, see section 2.6.28 of the User Guide (DS50002466C)
     pub fn soft_reset(&mut self) -> Result<(), Error<ER, EW, GpioError>> {
-        self.blocking_write(&[b'R', b',', b'1', b'\r'])
+        self.blocking_write(b"R,1\r")
             .map_err(|e| Error::Write(e))?;
 
         let mut buffer = [0; 19];
@@ -176,7 +176,7 @@ where
         self.blocking_read(&mut buffer[..])
             .map_err(|e| Error::Read(e))?;
 
-        if buffer != "Rebooting\r\n%REBOOT%".as_bytes() {
+        if buffer != b"Rebooting\r\n%REBOOT%" {
             Err(Error::InvalidResponse)
         } else {
             Ok(())
@@ -207,7 +207,7 @@ where
             .map_err(|e| Error::Read(e))?;
 
         // only if SR,<hex16> is set with 0x4000 (No prompt) then the prompt is not send
-        if buffer == "AOK\r\nCMD> ".as_bytes() {
+        if buffer == b"AOK\r\nCMD> " {
             Ok(())
         } else {
             Err(Error::InvalidResponse)
