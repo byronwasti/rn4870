@@ -101,8 +101,7 @@ where
         let mut buffer = [0; 8];
         let expected = [b'%', b'R', b'E', b'B', b'O', b'O', b'T', b'%'];
 
-        self.blocking_read(&mut buffer[..])
-            .map_err(|e| Error::Read(e))?;
+        self.blocking_read(&mut buffer[..]).map_err(Error::Read)?;
 
         if buffer != expected {
             Err(Error::InvalidResponse)
@@ -136,20 +135,19 @@ where
     /// Until the `embedded_hal` traits include error handling there
     /// is no device-agnostic way to deal with hardware errors. This is
     /// an escape hatch to allow users to access the UART peripheral.
-    pub fn handle_error<T: Fn(&mut UART) -> ()>(&mut self, func: T) {
+    pub fn handle_error<T: Fn(&mut UART)>(&mut self, func: T) {
         func(&mut self.uart);
     }
 
     /// Enter Command Mode
     pub fn enter_cmd_mode(&mut self) -> Result<(), Error<ER, EW, GpioError>> {
         self.blocking_write(&[b'$', b'$', b'$'])
-            .map_err(|e| Error::Write(e))?;
+            .map_err(Error::Write)?;
 
         let mut buffer = [0; 5];
         let expected = [b'C', b'M', b'D', b'>', b' '];
 
-        self.blocking_read(&mut buffer[..])
-            .map_err(|e| Error::Read(e))?;
+        self.blocking_read(&mut buffer[..]).map_err(Error::Read)?;
 
         if buffer != expected {
             Err(Error::InvalidResponse)
@@ -161,20 +159,18 @@ where
     /// Enter Data Mode
     pub fn enter_data_mode(&mut self) -> Result<(), Error<ER, EW, GpioError>> {
         self.blocking_write(&[b'-', b'-', b'-', b'\r'])
-            .map_err(|e| Error::Write(e))?;
+            .map_err(Error::Write)?;
 
         Ok(())
     }
 
     /// Software reset, see section 2.6.28 of the User Guide (DS50002466C)
     pub fn soft_reset(&mut self) -> Result<(), Error<ER, EW, GpioError>> {
-        self.blocking_write(b"R,1\r")
-            .map_err(|e| Error::Write(e))?;
+        self.blocking_write(b"R,1\r").map_err(Error::Write)?;
 
         let mut buffer = [0; 19];
 
-        self.blocking_read(&mut buffer[..])
-            .map_err(|e| Error::Read(e))?;
+        self.blocking_read(&mut buffer[..]).map_err(Error::Read)?;
 
         if &buffer != b"Rebooting\r\n%REBOOT%" {
             Err(Error::InvalidResponse)
@@ -190,21 +186,20 @@ where
     ) -> Result<(), Error<ER, EW, GpioError>> {
         // Send command
         self.blocking_write(&command.as_bytes())
-            .map_err(|e| Error::Write(e))?;
+            .map_err(Error::Write)?;
 
-        self.blocking_write(&[b',']).map_err(|e| Error::Write(e))?;
+        self.blocking_write(&[b',']).map_err(Error::Write)?;
 
         // Send argument
         self.blocking_write(&argument.as_bytes())
-            .map_err(|e| Error::Write(e))?;
+            .map_err(Error::Write)?;
 
         // Send return carriage to end command
-        self.blocking_write(&[b'\r']).map_err(|e| Error::Write(e))?;
+        self.blocking_write(&[b'\r']).map_err(Error::Write)?;
 
         // Check for response
         let mut buffer = [0; 10];
-        self.blocking_read(&mut buffer[..])
-            .map_err(|e| Error::Read(e))?;
+        self.blocking_read(&mut buffer[..]).map_err(Error::Read)?;
 
         // only if SR,<hex16> is set with 0x4000 (No prompt) then the prompt is not send
         if &buffer == b"AOK\r\nCMD> " {
