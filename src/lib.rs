@@ -176,7 +176,7 @@ where
         self.blocking_read(&mut buffer[..])
             .map_err(|e| Error::Read(e))?;
 
-        if buffer != b"Rebooting\r\n%REBOOT%" {
+        if &buffer != b"Rebooting\r\n%REBOOT%" {
             Err(Error::InvalidResponse)
         } else {
             Ok(())
@@ -207,7 +207,7 @@ where
             .map_err(|e| Error::Read(e))?;
 
         // only if SR,<hex16> is set with 0x4000 (No prompt) then the prompt is not send
-        if buffer == b"AOK\r\nCMD> " {
+        if &buffer == b"AOK\r\nCMD> " {
             Ok(())
         } else {
             Err(Error::InvalidResponse)
