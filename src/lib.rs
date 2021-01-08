@@ -13,6 +13,7 @@ use hal::digital::v2::OutputPin;
 use hal::serial::{Read, Write};
 
 /// Error type
+#[derive(Debug)]
 pub enum Error<ER, EW, GpioError> {
     /// Serial read error
     Read(ER),
