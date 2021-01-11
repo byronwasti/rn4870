@@ -240,6 +240,9 @@ where
         &mut self,
         fw_revision: &str,
     ) -> Result<(), Error<ER, EW, GpioError>> {
+        if fw_revision.as_bytes().len() > 20 {
+            panic!("Invalid name length");
+        }
         self.send_command("SDF", Some(fw_revision))
     }
 
@@ -247,6 +250,9 @@ where
         &mut self,
         hw_revision: &str,
     ) -> Result<(), Error<ER, EW, GpioError>> {
+        if hw_revision.as_bytes().len() > 20 {
+            panic!("Invalid name length");
+        }
         self.send_command("SDH", Some(hw_revision))
     }
 
@@ -254,10 +260,16 @@ where
         &mut self,
         sw_revision: &str,
     ) -> Result<(), Error<ER, EW, GpioError>> {
+        if sw_revision.as_bytes().len() > 20 {
+            panic!("Invalid name length");
+        }
         self.send_command("SDF", Some(sw_revision))
     }
 
     pub fn set_model_name(&mut self, model_name: &str) -> Result<(), Error<ER, EW, GpioError>> {
+        if model_name.as_bytes().len() > 20 {
+            panic!("Invalid name length");
+        }
         self.send_command("SDM", Some(model_name))
     }
 
@@ -265,6 +277,9 @@ where
         &mut self,
         manufacturer_name: &str,
     ) -> Result<(), Error<ER, EW, GpioError>> {
+        if manufacturer_name.as_bytes().len() > 20 {
+            panic!("Invalid name length");
+        }
         self.send_command("SDN", Some(manufacturer_name))
     }
 
@@ -272,6 +287,9 @@ where
         &mut self,
         serial_number: &str,
     ) -> Result<(), Error<ER, EW, GpioError>> {
+        if serial_number.as_bytes().len() > 20 {
+            panic!("Invalid name length");
+        }
         self.send_command("SDS", Some(serial_number))
     }
 
