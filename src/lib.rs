@@ -236,6 +236,45 @@ where
         self.send_command("SN", Some(name))
     }
 
+    pub fn set_firmware_revision(
+        &mut self,
+        fw_revision: &str,
+    ) -> Result<(), Error<ER, EW, GpioError>> {
+        self.send_command("SDF", Some(fw_revision))
+    }
+
+    pub fn set_hardware_revision(
+        &mut self,
+        hw_revision: &str,
+    ) -> Result<(), Error<ER, EW, GpioError>> {
+        self.send_command("SDH", Some(hw_revision))
+    }
+
+    pub fn set_software_revision(
+        &mut self,
+        sw_revision: &str,
+    ) -> Result<(), Error<ER, EW, GpioError>> {
+        self.send_command("SDF", Some(sw_revision))
+    }
+
+    pub fn set_model_name(&mut self, model_name: &str) -> Result<(), Error<ER, EW, GpioError>> {
+        self.send_command("SDM", Some(model_name))
+    }
+
+    pub fn set_manufacturer_name(
+        &mut self,
+        manufacturer_name: &str,
+    ) -> Result<(), Error<ER, EW, GpioError>> {
+        self.send_command("SDN", Some(manufacturer_name))
+    }
+
+    pub fn set_serial_number(
+        &mut self,
+        serial_number: &str,
+    ) -> Result<(), Error<ER, EW, GpioError>> {
+        self.send_command("SDS", Some(serial_number))
+    }
+
     /// Set default services
     pub fn set_services(&mut self, value: Services) -> Result<(), Error<ER, EW, GpioError>> {
         self.send_command("SS", Some(value.as_str()))
