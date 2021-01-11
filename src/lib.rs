@@ -183,17 +183,19 @@ where
     fn send_command(
         &mut self,
         command: &str,
-        argument: &str,
+        argument: Option<&str>,
     ) -> Result<(), Error<ER, EW, GpioError>> {
         // Send command
         self.blocking_write(&command.as_bytes())
             .map_err(Error::Write)?;
 
-        self.blocking_write(&[b',']).map_err(Error::Write)?;
+        if let Some(argument) = argument {
+            self.blocking_write(&[b',']).map_err(Error::Write)?;
 
-        // Send argument
-        self.blocking_write(&argument.as_bytes())
-            .map_err(Error::Write)?;
+            // Send argument
+            self.blocking_write(&argument.as_bytes())
+                .map_err(Error::Write)?;
+        }
 
         // Send return carriage to end command
         self.blocking_write(&[b'\r']).map_err(Error::Write)?;
@@ -219,7 +221,7 @@ where
             panic!("Invalid name length");
         }
 
-        self.send_command("S-", name)
+        self.send_command("S-", Some(name))
     }
     ///
     /// Sets the device name
@@ -231,12 +233,16 @@ where
             panic!("Invalid name length");
         }
 
-        self.send_command("SN", name)
+        self.send_command("SN", Some(name))
     }
 
     /// Set default services
     pub fn set_services(&mut self, value: Services) -> Result<(), Error<ER, EW, GpioError>> {
-        self.send_command("SS", value.as_str())
+        self.send_command("SS", Some(value.as_str()))
+    }
+
+    pub fn start_bonding(&mut self) -> Result<(), Error<ER, EW, GpioError>> {
+        self.send_command("B", None)
     }
 
     pub fn send_raw(&mut self, values: &[u8]) -> Result<(), EW> {
