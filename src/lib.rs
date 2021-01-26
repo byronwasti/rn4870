@@ -84,16 +84,8 @@ where
     NRST: OutputPin<Error = GpioError>,
 {
     /// Construct a new Rn4870 Object
-    pub fn new(
-        rx: RX,
-        tx: TX,
-        nrst: NRST,
-    ) -> Self {
-        Self {
-            rx,
-            tx,
-            nrst,
-        }
+    pub fn new(rx: RX, tx: TX, nrst: NRST) -> Self {
+        Self { rx, tx, nrst }
     }
 
     /// Reset the RN4870 module
@@ -322,6 +314,11 @@ where
 
     pub fn read_raw(&mut self) -> Result<u8, ER> {
         block!(self.rx.read())
+    }
+
+    /// Release the serial interfaces
+    pub fn release(self) -> (TX, RX) {
+        (self.tx, self.rx)
     }
 }
 
