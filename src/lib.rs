@@ -10,7 +10,7 @@ extern crate bitflags;
 
 use hal::blocking::delay::DelayMs;
 use hal::digital::v2::OutputPin;
-use hal::serial::{Read, Write};
+use hal::serial;
 
 /// Error type
 #[derive(Debug)]
@@ -71,19 +71,29 @@ impl<'a> Services {
 }
 
 /// Rn4870 Object
-pub struct Rn4870<UART, NRST> {
-    uart: UART,
+pub struct Rn4870<RX, TX, NRST> {
+    rx: RX,
+    tx: TX,
     nrst: NRST,
 }
 
-impl<UART, NRST, EW, ER, GpioError> Rn4870<UART, NRST>
+impl<RX, TX, NRST, EW, ER, GpioError> Rn4870<RX, TX, NRST>
 where
-    UART: Write<u8, Error = EW> + Read<u8, Error = ER>,
+    RX: serial::Read<u8, Error = ER>,
+    TX: serial::Write<u8, Error = EW>,
     NRST: OutputPin<Error = GpioError>,
 {
     /// Construct a new Rn4870 Object
-    pub fn new(uart: UART, nrst: NRST) -> Self {
-        Self { uart, nrst }
+    pub fn new(
+        rx: RX,
+        tx: TX,
+        nrst: NRST,
+    ) -> Self {
+        Self {
+            rx,
+            tx,
+            nrst,
+        }
     }
 
     /// Reset the RN4870 module
@@ -116,7 +126,7 @@ where
     /// TODO: Use `embedded_hal` traits for this in the future
     fn blocking_read(&mut self, buffer: &mut [u8]) -> Result<(), ER> {
         for elem in buffer {
-            *elem = block!(self.uart.read())?;
+            *elem = block!(self.rx.read())?;
         }
         Ok(())
     }
@@ -126,7 +136,7 @@ where
     /// TODO: Use `embedded_hal` traits for this in the future
     fn blocking_write(&mut self, buffer: &[u8]) -> Result<(), EW> {
         for elem in buffer {
-            block!(self.uart.write(*elem))?;
+            block!(self.tx.write(*elem))?;
         }
         Ok(())
     }
@@ -136,8 +146,8 @@ where
     /// Until the `embedded_hal` traits include error handling there
     /// is no device-agnostic way to deal with hardware errors. This is
     /// an escape hatch to allow users to access the UART peripheral.
-    pub fn handle_error<T: Fn(&mut UART)>(&mut self, func: T) {
-        func(&mut self.uart);
+    pub fn handle_error<T: Fn(&mut RX, &mut TX)>(&mut self, func: T) {
+        func(&mut self.rx, &mut self.tx);
     }
 
     /// Enter Command Mode
@@ -304,14 +314,14 @@ where
 
     pub fn send_raw(&mut self, values: &[u8]) -> Result<(), EW> {
         for value in values {
-            block!(self.uart.write(*value))?;
+            block!(self.tx.write(*value))?;
         }
 
         Ok(())
     }
 
     pub fn read_raw(&mut self) -> Result<u8, ER> {
-        block!(self.uart.read())
+        block!(self.rx.read())
     }
 }
 
