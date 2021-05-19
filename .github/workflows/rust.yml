@@ -21,8 +21,10 @@ jobs:
         components: clippy
     - name: Format
       run: cargo fmt --all -- --check
-    - name: Clippy
-      run: cargo clippy --all-targets -- -D warnings
+    - uses: actions-rs/clippy-check@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        args: --examples --target thumbv7m-none-eabi
     - name: Build
       run: cargo build --verbose
     - name: Run tests
