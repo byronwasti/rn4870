@@ -12,6 +12,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        target: thumbv7m-none-eabi
+        override: true
+        components: clippy
     - name: Format
       run: cargo fmt --all -- --check
     - name: Clippy

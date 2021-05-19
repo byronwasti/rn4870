@@ -2,10 +2,9 @@
 #![no_main]
 #![no_std]
 
-#[macro_use(block)]
-extern crate nb;
 extern crate cortex_m;
 extern crate cortex_m_rt;
+extern crate nb;
 extern crate panic_rtt_target;
 extern crate rtt_target;
 extern crate stm32f1xx_hal;
