@@ -42,6 +42,9 @@ fn USART2() {
                 rprintln!("data: {:02x?}", result);
                 result.clear();
                 result.push(byte).unwrap();
+            } else if byte == b'\0' {
+                rprintln!("data: {:02x?}", result);
+                result.clear();
             } else {
                 result.push(byte).unwrap();
             }
