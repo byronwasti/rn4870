@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.3.0] - 2021-05-26
+
 ### Changed
 
 - [breaking-change] `Rn4870` constructor now expects split `Rx` and `Tx` of the serial peripheral structure
