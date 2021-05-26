@@ -10,9 +10,10 @@ extern crate bitflags;
 
 use hal::blocking::delay::DelayMs;
 use hal::digital::v2::OutputPin;
-use hal::serial::{Read, Write};
+use hal::serial;
 
 /// Error type
+#[derive(Debug)]
 pub enum Error<ER, EW, GpioError> {
     /// Serial read error
     Read(ER),
@@ -70,19 +71,21 @@ impl<'a> Services {
 }
 
 /// Rn4870 Object
-pub struct Rn4870<UART, NRST> {
-    uart: UART,
+pub struct Rn4870<RX, TX, NRST> {
+    rx: RX,
+    tx: TX,
     nrst: NRST,
 }
 
-impl<UART, NRST, EW, ER, GpioError> Rn4870<UART, NRST>
+impl<RX, TX, NRST, EW, ER, GpioError> Rn4870<RX, TX, NRST>
 where
-    UART: Write<u8, Error = EW> + Read<u8, Error = ER>,
+    RX: serial::Read<u8, Error = ER>,
+    TX: serial::Write<u8, Error = EW>,
     NRST: OutputPin<Error = GpioError>,
 {
     /// Construct a new Rn4870 Object
-    pub fn new(uart: UART, nrst: NRST) -> Self {
-        Self { uart, nrst }
+    pub fn new(rx: RX, tx: TX, nrst: NRST) -> Self {
+        Self { rx, tx, nrst }
     }
 
     /// Reset the RN4870 module
@@ -115,7 +118,7 @@ where
     /// TODO: Use `embedded_hal` traits for this in the future
     fn blocking_read(&mut self, buffer: &mut [u8]) -> Result<(), ER> {
         for elem in buffer {
-            *elem = block!(self.uart.read())?;
+            *elem = block!(self.rx.read())?;
         }
         Ok(())
     }
@@ -125,7 +128,7 @@ where
     /// TODO: Use `embedded_hal` traits for this in the future
     fn blocking_write(&mut self, buffer: &[u8]) -> Result<(), EW> {
         for elem in buffer {
-            block!(self.uart.write(*elem))?;
+            block!(self.tx.write(*elem))?;
         }
         Ok(())
     }
@@ -135,8 +138,8 @@ where
     /// Until the `embedded_hal` traits include error handling there
     /// is no device-agnostic way to deal with hardware errors. This is
     /// an escape hatch to allow users to access the UART peripheral.
-    pub fn handle_error<T: Fn(&mut UART)>(&mut self, func: T) {
-        func(&mut self.uart);
+    pub fn handle_error<T: Fn(&mut RX, &mut TX)>(&mut self, func: T) {
+        func(&mut self.rx, &mut self.tx);
     }
 
     /// Enter Command Mode
@@ -182,17 +185,19 @@ where
     fn send_command(
         &mut self,
         command: &str,
-        argument: &str,
+        argument: Option<&str>,
     ) -> Result<(), Error<ER, EW, GpioError>> {
         // Send command
         self.blocking_write(&command.as_bytes())
             .map_err(Error::Write)?;
 
-        self.blocking_write(&[b',']).map_err(Error::Write)?;
+        if let Some(argument) = argument {
+            self.blocking_write(&[b',']).map_err(Error::Write)?;
 
-        // Send argument
-        self.blocking_write(&argument.as_bytes())
-            .map_err(Error::Write)?;
+            // Send argument
+            self.blocking_write(&argument.as_bytes())
+                .map_err(Error::Write)?;
+        }
 
         // Send return carriage to end command
         self.blocking_write(&[b'\r']).map_err(Error::Write)?;
@@ -218,7 +223,7 @@ where
             panic!("Invalid name length");
         }
 
-        self.send_command("S-", name)
+        self.send_command("S-", Some(name))
     }
     ///
     /// Sets the device name
@@ -230,24 +235,90 @@ where
             panic!("Invalid name length");
         }
 
-        self.send_command("SN", name)
+        self.send_command("SN", Some(name))
+    }
+
+    pub fn set_firmware_revision(
+        &mut self,
+        fw_revision: &str,
+    ) -> Result<(), Error<ER, EW, GpioError>> {
+        if fw_revision.as_bytes().len() > 20 {
+            panic!("Invalid name length");
+        }
+        self.send_command("SDF", Some(fw_revision))
+    }
+
+    pub fn set_hardware_revision(
+        &mut self,
+        hw_revision: &str,
+    ) -> Result<(), Error<ER, EW, GpioError>> {
+        if hw_revision.as_bytes().len() > 20 {
+            panic!("Invalid name length");
+        }
+        self.send_command("SDH", Some(hw_revision))
+    }
+
+    pub fn set_software_revision(
+        &mut self,
+        sw_revision: &str,
+    ) -> Result<(), Error<ER, EW, GpioError>> {
+        if sw_revision.as_bytes().len() > 20 {
+            panic!("Invalid name length");
+        }
+        self.send_command("SDF", Some(sw_revision))
+    }
+
+    pub fn set_model_name(&mut self, model_name: &str) -> Result<(), Error<ER, EW, GpioError>> {
+        if model_name.as_bytes().len() > 20 {
+            panic!("Invalid name length");
+        }
+        self.send_command("SDM", Some(model_name))
+    }
+
+    pub fn set_manufacturer_name(
+        &mut self,
+        manufacturer_name: &str,
+    ) -> Result<(), Error<ER, EW, GpioError>> {
+        if manufacturer_name.as_bytes().len() > 20 {
+            panic!("Invalid name length");
+        }
+        self.send_command("SDN", Some(manufacturer_name))
+    }
+
+    pub fn set_serial_number(
+        &mut self,
+        serial_number: &str,
+    ) -> Result<(), Error<ER, EW, GpioError>> {
+        if serial_number.as_bytes().len() > 20 {
+            panic!("Invalid name length");
+        }
+        self.send_command("SDS", Some(serial_number))
     }
 
     /// Set default services
     pub fn set_services(&mut self, value: Services) -> Result<(), Error<ER, EW, GpioError>> {
-        self.send_command("SS", value.as_str())
+        self.send_command("SS", Some(value.as_str()))
+    }
+
+    pub fn start_bonding(&mut self) -> Result<(), Error<ER, EW, GpioError>> {
+        self.send_command("B", None)
     }
 
     pub fn send_raw(&mut self, values: &[u8]) -> Result<(), EW> {
         for value in values {
-            block!(self.uart.write(*value))?;
+            block!(self.tx.write(*value))?;
         }
 
         Ok(())
     }
 
     pub fn read_raw(&mut self) -> Result<u8, ER> {
-        block!(self.uart.read())
+        block!(self.rx.read())
+    }
+
+    /// Release the serial interfaces
+    pub fn release(self) -> (TX, RX) {
+        (self.tx, self.rx)
     }
 }
 

@@ -13,13 +13,13 @@ Unfortunately I no longer have the time to actively develop this crate. However,
 - Hardware Reset module
 
 ## TODO
-- Rework the state machine system to be more error friendly 
+- Rework the state machine system to be more error friendly
 - Implement all the various Command Mode functionality
 - Serial read is extremely finicky and prone to overrun
 
 ## Examples
 
-Examples will be available soon enough!
+- `examples/bluepill-irq.rs` - shows how to configure and receive data from the module using IRQ
 
 ## License
 
